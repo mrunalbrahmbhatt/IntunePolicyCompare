@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "IntuneSecurityBaselinePolicyCompare": {
+      "commandName": "Project",
+      "commandLineArgs": "C:\\Intune\\Pilot-Windows-10-Device-SecurityBaselineACSCWindowsHardening.json\r\nC:\\Intune\\Pilot-Windows10-Device-SecurityBaseline_01-11-2023-15-53-56.743.json\r\nC:\\Intune"
+    }
+  }
+}

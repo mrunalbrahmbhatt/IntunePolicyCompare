@@ -18,6 +18,7 @@ string outputFilePath = EnsurePathEndsWithSlash(args[2]);
 const string MISSING = "MISSING";
 const string NOTCONFIGURED = "notConfigured";
 const string ARRAY = "ARRAY";
+string[] metaData = new string[] { "displayName", "description" , "roleScopeTagIds", "TemplateDisplayName" , "TemplateId", "versionInfo" };
 
 // Display the input and output file paths.
 Console.WriteLine("Input File 1: " + inputFilePath1);
@@ -76,7 +77,7 @@ foreach (var key in distinctKeys)
     var value1 = flatPolicy1.ContainsKey(key) ? flatPolicy1[key] :MISSING;
     var value2 = flatPolicy2.ContainsKey(key) ? flatPolicy2[key] : MISSING;
     var values = new List<object>() { value1, value2 };
-    var result = GetResult(value1, value2);
+    var result = GetResult(key,value1, value2);
 
     // Add comparison results to the dictionary.
     compareResult.Add(key, new CompareResult() { Values = values, Result = result });
@@ -187,8 +188,11 @@ bool IsComplex(SettingsDeltum settings)
 //DIFF: When two values are different e.g. missing setting in another file or not configured in another in another file.
 //MATCH : When two values are exact match
 //CONFLICT:When two values are set by user and different in other policy.
-string GetResult(object value1, object value2)
+string GetResult(string key, object value1, object value2)
 {
+    if (metaData.Contains(key))
+        return string.Empty;
+
     if (value1 == null && value2 != null || value1 != null && value2 == null)
         return "DIFF";
     else if (value1 == value2)
@@ -213,7 +217,7 @@ void GenerateOutputInExcel(IEnumerable<string> distinctKeys, Dictionary<string, 
     IWorkbook workbook = new XSSFWorkbook();
 
     // Create a worksheet within the workbook.
-    ISheet worksheet = workbook.CreateSheet("SampleSheet");
+    ISheet worksheet = workbook.CreateSheet("Settings Comparison");
 
     // Define the headers for the Excel file.
     string[] headers = { "Setting", compareResult["displayName"].Values[0]?.ToString(), compareResult["displayName"].Values[1].ToString(), "Status" };

@@ -41,7 +41,7 @@ string json2 = File.ReadAllText(inputFilePath2);
 string outputPath = outputFilePath;
 
 // Generate a unique output file name.
-string fileName = $"PolicyCompare_{DateTime.Now:ddMMyyyyhhmmss}.xlsx";
+string fileName = $"BaselinePolicyCompare_{DateTime.Now:ddMMyyyyhhmmss}.xlsx";
 
 // Deserialize the JSON files into Policy objects.
 var policy1 = JsonConvert.DeserializeObject<Policy>(json1);

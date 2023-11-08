@@ -23,7 +23,9 @@ E.g. **CompareIntuneBaselineCompare.exe "C:\Intune\Pilot-Windows-10-Device-Secur
 
 **DIFF**: Either file has **MISSING** setting or **notConfigured**.
 
+MISSING VIEW
 ![Missing Example](DIFF1.png)
+NOT CONFIGURED VIEW
 ![Not Configured Example](DIFF2.png)
 
 **ARRAY**: Given setting has nested child array, which gets flattern by its definitionId.

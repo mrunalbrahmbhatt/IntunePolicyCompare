@@ -14,14 +14,40 @@ E.g. **CompareIntuneBaselineCompare.exe "C:\Intune\Pilot-Windows-10-Device-Secur
 
 ## Meaning
 **MATCH**: Both config file has exact match.
+
 ![Match Example](MATCH.png)
+
 **CONFLICT**: Both config file has different value set.
+
 ![Conflict Example](CONFLICT.png)
+
 **DIFF**: Either file has **MISSING** setting or **notConfigured**.
+
 ![Missing Example](DIFF1.png)
 ![Not Configured Example](DIFF2.png)
+
 **ARRAY**: Given setting has nested child array, which gets flattern by its definitionId.
-![Array Example](ARRAY.png)
+
+JSON VIEW
+![Array JSON Example](ARRAY.png)
+
+EXCEL VIEW
+![Array Excel Example](ARRAY1.png)
+
+MORE EXAMPLE
+![Array Excel Example](ARRAY2.png)
+
+**implementationId** Representation :
+
+JSON VIEW:
+
+![image](https://github.com/mrunalbrahmbhatt/IntunePolicyCompare/assets/7857050/be29a37b-ab19-4a03-9c49-c648b520eb58)
+
+EXCEL VIEW:
+
+![image](https://github.com/mrunalbrahmbhatt/IntunePolicyCompare/assets/7857050/b0459cd7-d81b-4bba-b64f-e47bb6f03b95)
+
+
 
 ## Disclaimer
 

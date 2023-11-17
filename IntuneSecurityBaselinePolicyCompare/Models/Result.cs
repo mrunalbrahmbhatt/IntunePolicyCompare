@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CompareIntuneBaselineCompare.Models
 {
-    public class CompareResult
+    public class CompareResultRow
     {
         public List<object>? Values { get; set; }
         public string? Result { get; set; }

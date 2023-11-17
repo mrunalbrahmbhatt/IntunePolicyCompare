@@ -1,8 +1,10 @@
 ﻿using CompareIntuneBaselineCompare.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using NPOI.SS.Formula.Functions;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
+using System.Net.Http.Json;
 
 // Check if the correct number of command-line arguments (3) is provided.
 if (args.Length != 3)
@@ -33,40 +35,38 @@ if (!File.Exists(inputFilePath1) || !File.Exists(inputFilePath2))
 }
 
 // Create a dictionary to store comparison results.
-Dictionary<string, CompareResult> compareResult = new Dictionary<string, CompareResult>();
+Dictionary<string, CompareResultRow> compareResult = new Dictionary<string, CompareResultRow>();
 
 // Read JSON content from the input files.
 string json1 = File.ReadAllText(inputFilePath1);
 string json2 = File.ReadAllText(inputFilePath2);
 string outputPath = outputFilePath;
+var flatPolicy1 = new Dictionary<string, object>();
+var flatPolicy2 = new Dictionary<string, object>();
 
 // Generate a unique output file name.
 string fileName = $"BaselinePolicyCompare_{DateTime.Now:ddMMyyyyhhmmss}.xlsx";
 
-// Deserialize the JSON files into Policy objects.
-var policy1 = JsonConvert.DeserializeObject<Policy>(json1);
-var policy2 = JsonConvert.DeserializeObject<Policy>(json2);
-var flatPolicy1 = new Dictionary<string, object>();
-var flatPolicy2 = new Dictionary<string, object>();
+if (IsTemplatedPolicy(json1))
+{
+    flatPolicy1 = FlatternBaselinePolicy(json1, flatPolicy1);
+}
+else
+{
+    flatPolicy1 = FlatternNonBaseLinePolicy(json1, flatPolicy1);
+}
 
-// Populate the flatPolicy dictionaries with basic policy information.
-flatPolicy1["displayName"] = policy1.DisplayName;
-flatPolicy1["description"] = policy1.Description;
-flatPolicy1["roleScopeTagIds"] = string.Join("|", policy1.RoleScopeTagIds);
-flatPolicy1["TemplateDisplayName"] = policy1.TemplateDisplayName;
-flatPolicy1["TemplateId"] = policy1.TemplateId;
-flatPolicy1["versionInfo"] = policy1.VersionInfo;
 
-flatPolicy2["displayName"] = policy2.DisplayName;
-flatPolicy2["description"] = policy2.Description;
-flatPolicy2["roleScopeTagIds"] = string.Join("|", policy2.RoleScopeTagIds);
-flatPolicy2["TemplateDisplayName"] = policy2.TemplateDisplayName;
-flatPolicy2["TemplateId"] = policy2.TemplateId;
-flatPolicy2["versionInfo"] = policy2.VersionInfo;
+if (IsTemplatedPolicy(json2))
+{
+    flatPolicy2 = FlatternBaselinePolicy(json2, flatPolicy2);
+}
+else
+{
+    flatPolicy2 = FlatternNonBaseLinePolicy(json2, flatPolicy2);
+}
 
-// Flatten policy data by processing settings deltas.
-flatPolicy1 = FlattenPolicy(flatPolicy1, policy1.SettingsDelta);
-flatPolicy2 = FlattenPolicy(flatPolicy2, policy2.SettingsDelta);
+
 
 // Get distinct keys from both flattened policies.
 var distinctKeys = flatPolicy1.Keys.Union(flatPolicy2.Keys);
@@ -80,7 +80,7 @@ foreach (var key in distinctKeys)
     var result = GetResult(key,value1, value2);
 
     // Add comparison results to the dictionary.
-    compareResult.Add(key, new CompareResult() { Values = values, Result = result });
+    compareResult.Add(key, new CompareResultRow() { Values = values, Result = result });
 }
 
 // Generate the comparison result in an Excel file.
@@ -89,22 +89,77 @@ GenerateOutputInExcel(distinctKeys, compareResult, outputPath + fileName);
 // Display completion message with the path to the generated Excel file.
 Console.WriteLine($"Complete: {outputPath + fileName}");
 
-// Function to flatten policy data by processing settings deltas.
-Dictionary<string, object> FlattenPolicy(Dictionary<string, object> flatPolicy, List<SettingsDeltum> settingsDelta)
+Dictionary<string, object> FlatternNonBaseLinePolicy(string json, Dictionary<string, object> flatPolicy)
 {
+    JObject jsonObject = JObject.Parse(json);
+    flatPolicy = Flatten(jsonObject);
+    return flatPolicy;
+}
+
+Dictionary<string, object> Flatten(JToken token, string prefix = "")
+{
+    var dict = new Dictionary<string, object>();
+
+    if (token.Type == JTokenType.Object)
+    {
+        foreach (JProperty prop in token.Children<JProperty>())
+        {
+            string propPath = $"{prefix}_{prop.Name}";
+            var innerDict = Flatten(prop.Value, propPath);
+
+            foreach (var kvp in innerDict)
+            {
+                dict.Add(kvp.Key, kvp.Value);
+            }
+        }
+    }
+    else if (token.Type == JTokenType.Array)
+    {
+        dict.Add(prefix.Trim('_'), JTokenArrayToString(token));
+    }
+    else
+    {
+        dict.Add(prefix.Trim('_'), ((JValue)token).Value);
+    }
+
+    return dict;
+}
+
+string GetContentAfterLastUnderscore(string input)
+{
+    int lastUnderscoreIndex = input.LastIndexOf('_');
+
+    if (lastUnderscoreIndex != -1 && lastUnderscoreIndex < input.Length - 1)
+    {
+        // Get the content after the last underscore
+        return input.Substring(lastUnderscoreIndex + 1);
+    }
+
+    // If no underscore found or it's the last character, return an empty string or handle it as needed
+    return string.Empty;
+}
+
+// Function to flatten policy data by processing settings deltas.
+Dictionary<string, object> FlattenPolicySettings(Dictionary<string, object> flatPolicy, List<SettingsDeltum> settingsDelta, string prefix="")
+{
+    string definitationId = string.Empty;
+
     if (settingsDelta != null || settingsDelta.Any())
     {
         foreach (var settings in settingsDelta)
         {
+            definitationId = $"{prefix}_{GetContentAfterLastUnderscore(settings.DefinitionId)}";
+            definitationId = definitationId.Trim('_');
+
             if (!IsComplex(settings) && !IsAbstract(settings))
             {
-                flatPolicy[settings.DefinitionId] = settings.Value;
+                flatPolicy[definitationId] = settings.Value;
             }
             else if (IsComplex(settings) && !IsAbstract(settings))
             {
-                flatPolicy[settings.DefinitionId] = ARRAY;
+                flatPolicy[definitationId] = ARRAY;
                 var nestedSettings = ((JArray)settings.Value).ToObject<List<SettingsDeltum>>();
-                flatPolicy = FlattenPolicy(flatPolicy, nestedSettings);
+                flatPolicy = FlattenPolicySettings(flatPolicy, nestedSettings, definitationId);
             }
             else if (IsAbstract(settings))
             {
@@ -113,6 +168,27 @@ Dictionary<string, object> FlattenPolicy(Dictionary<string, object> flatPolicy, 
         }
     }
     return flatPolicy;
+}
+
+string JTokenArrayToString(JToken arrayToken)
+    {
+    if (arrayToken != null && arrayToken.Type == JTokenType.Array)
+    {
+        var array = (JArray)arrayToken;
+
+        // Convert each JToken element to its string representation
+        string[] stringArray = Array.ConvertAll(array.ToArray(), x => x.ToString());
+
+        // Join the string representations using a delimiter (comma and space in this case)
+        return string.Join(", ", stringArray);
+    }
+
+    return string.Empty;
+}
+bool IsTemplatedPolicy(string json)
+{
+    if (!string.IsNullOrWhiteSpace(json) && json.Contains("\"TemplateId\"")) return true;
+    return false;
 }
 
 // Function to ensure the path ends with a slash (for directories).
@@ -127,8 +203,10 @@ static string EnsurePathEndsWithSlash(string path)
 // Function to flatten abstract settings and add them to the flatPolicy dictionary.
 Dictionary<string, object> FlattenAbstractSettings(Dictionary<string, object> flatPolicy, SettingsDeltum settings)
 {
+    string definitationId = string.Empty;
+    definitationId = GetContentAfterLastUnderscore(settings.DefinitionId);
     // Store the implementation ID in the flatPolicy using the definition ID as the key.
-    flatPolicy[settings.DefinitionId] = settings.ImplementationId;
+    flatPolicy[definitationId] = settings.ImplementationId;
 
     if (settings.ImplementationId != null)
     {
@@ -142,7 +220,7 @@ Dictionary<string, object> FlattenAbstractSettings(Dictionary<string, object> fl
                 continue;
 
             // Add key-value pairs to the flatPolicy with a combined key.
-            flatPolicy[settings.DefinitionId + "_" + kv.Key] = kv.Value;
+            flatPolicy[definitationId + "_" + kv.Key] = kv.Value;
         }
     }
 
@@ -211,7 +289,7 @@ string GetResult(string key, object value1, object value2)
 }
 
 // Function to generate an Excel output with comparison results.
-void GenerateOutputInExcel(IEnumerable<string> distinctKeys, Dictionary<string, CompareResult> compareResult, string filePath)
+void GenerateOutputInExcel(IEnumerable<string> distinctKeys, Dictionary<string, CompareResultRow> compareResult, string filePath)
 {
     // Create a new Excel workbook.
     IWorkbook workbook = new XSSFWorkbook();
@@ -251,3 +329,17 @@ void GenerateOutputInExcel(IEnumerable<string> distinctKeys, Dictionary<string, 
     }
 }
 
+Dictionary<string, object> FlatternBaselinePolicy(string json, Dictionary<string, object> flatPolicy)
+{
+    // Deserialize the JSON files into Policy objects.
+    var policy = JsonConvert.DeserializeObject<BaselinePolicy>(json);
+    // Populate the flatPolicy dictionaries with basic policy information.
+    flatPolicy["displayName"] = policy.DisplayName;
+    flatPolicy["description"] = policy.Description;
+    flatPolicy["roleScopeTagIds"] = string.Join("|", policy.RoleScopeTagIds);
+    flatPolicy["TemplateDisplayName"] = policy.TemplateDisplayName;
+    flatPolicy["TemplateId"] = policy.TemplateId;
+    flatPolicy["version"] = policy.VersionInfo;
+    flatPolicy = FlattenPolicySettings(flatPolicy, policy.SettingsDelta);
+    return flatPolicy;
+}

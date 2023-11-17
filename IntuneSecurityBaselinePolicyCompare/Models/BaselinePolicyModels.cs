@@ -2,7 +2,7 @@
 
 namespace CompareIntuneBaselineCompare.Models
 {
-    public class Policy
+    public class BaselinePolicy
     {
         [JsonProperty("displayName", NullValueHandling = NullValueHandling.Ignore)]
         public string DisplayName { get; set; }

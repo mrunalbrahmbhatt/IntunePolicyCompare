@@ -1,7 +1,6 @@
 
 # Intune Baseline Policy Compare Tool
-This tool helps admins to find the difference and conflict between two given Intune baseline policies. As a result, it will produce excel sheet with the difference, matching and conflict setting details.
-It matches settings by **definitionId** property.
+This tool helps admins to find the difference and conflict between two given Intune policies. As a result, it will produce excel sheet with the difference, matching and conflict setting details.
 
 **Note**: This policy files have been generated using https://github.com/microsoftgraph/powershell-intune-samples
 

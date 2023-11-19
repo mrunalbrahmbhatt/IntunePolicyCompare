@@ -20,8 +20,8 @@ string outputFilePath = EnsurePathEndsWithSlash(args[2]);
 const string MISSING = "MISSING";
 const string NOTCONFIGURED = "notConfigured";
 const string ARRAY = "ARRAY";
-string[] metaData = new string[] { "displayName", "description" , "roleScopeTagIds", "TemplateDisplayName" , "TemplateId", "versionInfo" };
-
+string[] metaData = new string[] { "displayName", "description", "roleScopeTagIds", "TemplateDisplayName", "TemplateId", "versionInfo" };
+string[] ignoreProperties = new string[] { "@odata.type", "id", "lastModifiedDateTime", "createdDateTime" };
 // Display the input and output file paths.
 Console.WriteLine("Input File 1: " + inputFilePath1);
 Console.WriteLine("Input File 2: " + inputFilePath2);
@@ -74,10 +74,12 @@ var distinctKeys = flatPolicy1.Keys.Union(flatPolicy2.Keys);
 // Compare values and generate results for each key.
 foreach (var key in distinctKeys)
 {
-    var value1 = flatPolicy1.ContainsKey(key) ? flatPolicy1[key] :MISSING;
+    if(ignoreProperties.Contains(key)) continue;
+
+    var value1 = flatPolicy1.ContainsKey(key) ? flatPolicy1[key] : MISSING;
     var value2 = flatPolicy2.ContainsKey(key) ? flatPolicy2[key] : MISSING;
     var values = new List<object>() { value1, value2 };
-    var result = GetResult(key,value1, value2);
+    var result = GetResult(key, value1, value2);
 
     // Add comparison results to the dictionary.
     compareResult.Add(key, new CompareResultRow() { Values = values, Result = result });
@@ -140,7 +142,7 @@ string GetContentAfterLastUnderscore(string input)
 }
 
 // Function to flatten policy data by processing settings deltas.
-Dictionary<string, object> FlattenPolicySettings(Dictionary<string, object> flatPolicy, List<SettingsDeltum> settingsDelta, string prefix="")
+Dictionary<string, object> FlattenPolicySettings(Dictionary<string, object> flatPolicy, List<SettingsDeltum> settingsDelta, string prefix = "")
 {
     string definitationId = string.Empty;
 
@@ -171,7 +173,7 @@ Dictionary<string, object> FlattenPolicySettings(Dictionary<string, object> flat
 }
 
 string JTokenArrayToString(JToken arrayToken)
-    {
+{
     if (arrayToken != null && arrayToken.Type == JTokenType.Array)
     {
         var array = (JArray)arrayToken;
@@ -312,6 +314,8 @@ void GenerateOutputInExcel(IEnumerable<string> distinctKeys, Dictionary<string, 
     // Fill the worksheet with comparison results.
     foreach (string key in distinctKeys)
     {
+        if(ignoreProperties.Contains(key)) continue;
+
         IRow dataRow = worksheet.CreateRow(rowIndex + 1);
         dataRow.CreateCell(0).SetCellValue(key);
         for (int columnIndex = 1; columnIndex < 3; columnIndex++)

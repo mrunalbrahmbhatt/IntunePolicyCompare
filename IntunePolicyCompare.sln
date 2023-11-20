@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.7.34221.43
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CompareIntuneBaselineCompare", "IntuneSecurityBaselinePolicyCompare\CompareIntuneBaselineCompare.csproj", "{341DAE03-5122-4B33-961D-B06163D5DD24}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IntunePolicyCompare", "IntuneSecurityBaselinePolicyCompare\IntunePolicyCompare.csproj", "{341DAE03-5122-4B33-961D-B06163D5DD24}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -6,9 +6,9 @@ This tool helps admins to find the difference and conflict between two given Int
 
 ## Usage
 
-    CompareIntuneBaselineCompare.exe "<file1>.json" "<file2>.json" "<outputpath>"
+    IntunePolicyCompare.exe "<file1>.json" "<file2>.json" "<outputpath>"
 
-E.g. **CompareIntuneBaselineCompare.exe "C:\Intune\Pilot-Windows-10-Device-SecurityBaselineACSCWindowsHardening.json" "C:\Intune\Pilot-Windows10-Device-SecurityBaseline_01-11-2023-15-53-56.743.json" "C:\Intune\"**
+E.g. **IntunePolicyCompare.exe "C:\Intune\Pilot-Windows-10-Device-SecurityBaselineACSCWindowsHardening.json" "C:\Intune\Pilot-Windows10-Device-SecurityBaseline_01-11-2023-15-53-56.743.json" "C:\Intune\"**
 
 
 ## Meaning
